@@ -1,41 +1,20 @@
 <template>
-  <div>
-    <Navbar :user="user" :logout="logout" />
-    <router-link to="/products">Products</router-link>
-    <router-view />
-  </div>
+  <v-app>
+    <Navbar />
+    <v-main>
+      <router-view />
+    </v-main>
+  </v-app>
 </template>
 
-<script>
-import { ref, onMounted } from "vue"
-import { onAuthStateChanged, signOut } from "firebase/auth"
-import { auth } from "./firebase/firebase"
-import Navbar from "./components/Navbar.vue"
+<script setup>
+import Navbar from './components/Navbar.vue';
+import { useAuthStore } from './stores/authStore';
+import { onMounted } from 'vue';
 
-export default {
-  name: "App",
-  components: {
-    Navbar
-  },
-  setup() {
-    const user = ref(null)
+const authStore = useAuthStore();
 
-    onMounted(() => {
-      onAuthStateChanged(auth, (currentUser) => {
-        user.value = currentUser
-      })
-    })
-
-    const logout = async () => {
-      await signOut(auth)
-      user.value = null
-    }
-
-    return {
-      user,
-      logout
-    }
-  }
-}
+onMounted(() => {
+  authStore.initAuth();
+});
 </script>
-
