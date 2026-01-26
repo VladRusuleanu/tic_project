@@ -1,4 +1,4 @@
-const { db } = require('../config/db');
+const { db } = require('../config/firebase');
 const Joi = require('joi');
 
 const productSchema = Joi.object({

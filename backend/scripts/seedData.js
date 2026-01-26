@@ -1,46 +1,84 @@
-const admin = require("firebase-admin");
 const { faker } = require('@faker-js/faker');
-const serviceAccount = require("../firebase/serviceAccountKey.json");
+const { db } = require('../config/db'); // Asigura-te ca calea e corecta catre db.js
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+// Listele tale din Frontend (ca sa generam date care arata bine in aplicatie)
+const categories = ['IT & Computers', 'Mobile & Phones', 'Office Furniture', 'Peripherals', 'Networking'];
 
-const db = admin.firestore();
+const subCategoryMapping = {
+    'IT & Computers': ['Laptop', 'Desktop', 'Server', 'Workstation'],
+    'Mobile & Phones': ['Smartphone', 'Tablet'],
+    'Office Furniture': ['Desk', 'Chair', 'Cabinet', 'Lamp'],
+    'Peripherals': ['Mouse', 'Keyboard', 'Headset', 'Monitor'],
+    'Networking': ['Router', 'Switch', 'Modem']
+};
 
-async function generateProducts(count = 20) {
-  console.log(`Se generează ${count} produse...`);
-  const batch = db.batch();
+const warehouses = ['Central Warehouse', 'IT Dept', 'Reception', 'Remote'];
+
+async function seedDatabase() {
+  console.log('🌱 Starting database seeding...');
+
+  const products = [];
   
-  const MY_USER_ID = "hc42aPVJHNZnARk67xmbe84hzgx1"; 
-
-  for (let i = 0; i < count; i++) {
-    const docRef = db.collection('products').doc();
+  // Generam 20 de produse (poti pune 50 daca vrei)
+  for (let i = 0; i < 20; i++) {
     
+    // Alegem random o categorie si o subcategorie valida
+    const randomCategory = faker.helpers.arrayElement(categories);
+    const randomSubCategory = faker.helpers.arrayElement(subCategoryMapping[randomCategory]);
+    
+    // Generam un nume real (ex: "Modern Granite Computer")
+    const productName = faker.commerce.productName();
+
     const product = {
-      name: faker.commerce.productName(),
-      price: parseFloat(faker.commerce.price()),
+      // 1. Numele si versiunea lowercase (CRITIC pentru sistemul tau!)
+      name: productName,
+      nameLower: productName.toLowerCase(), 
+      
+      // 2. Pretul (numar, nu string)
+      price: parseFloat(faker.commerce.price({ min: 100, max: 2000 })),
+      
+      // 3. Structura Nested (NoSQL) pentru Categorie
       category: {
-        name: faker.commerce.department(),
-        type: "Standard"
+        name: randomCategory,
+        subcategory: randomSubCategory,
+        id: 'cat_' + randomCategory.toLowerCase().replace(/\s+/g, '_')
       },
+
+      // 4. Specificatii (random)
       specifications: {
+        description: faker.commerce.productDescription(),
         material: faker.commerce.productMaterial(),
         color: faker.color.human()
       },
-      stock: {
-        quantity: faker.number.int({ min: 0, max: 100 }),
-        warehouse: faker.location.city()
+
+      // 5. Inventar (Nested)
+      inventory: {
+        quantity: faker.number.int({ min: 1, max: 50 }),
+        defective: faker.number.int({ min: 0, max: 5 }),
+        warehouse: faker.helpers.arrayElement(warehouses)
       },
-      createdBy: MY_USER_ID,
-      createdAt: new Date().toISOString()
+
+      // 6. Metadata
+      createdBy: 'system_seed', // Marcam ca fiind generat automat
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
-    batch.set(docRef, product);
+    products.push(product);
   }
 
+  // Scriem totul in Firebase (Batch Write - scriere in masa)
+  const batch = db.batch();
+  
+  products.forEach((prod) => {
+    const docRef = db.collection('products').doc(); // Generam ID automat
+    batch.set(docRef, prod);
+  });
+
   await batch.commit();
-  console.log("Generare completă!");
+  console.log(`✅ Successfully added ${products.length} products to Firestore!`);
+  process.exit(0); // Inchidem scriptul cand termina
 }
 
-generateProducts();
+// Rulam functia
+seedDatabase().catch(console.error);
