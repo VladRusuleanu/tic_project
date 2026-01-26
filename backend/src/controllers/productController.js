@@ -6,8 +6,9 @@ const productSchema = Joi.object({
   price: Joi.number().positive().required(),
   category: Joi.object({
     name: Joi.string().required(),
+    subcategory: Joi.string().allow('').optional(),
     id: Joi.string().allow(null, '')
-  }).optional(),
+  }).required(),
   
   specifications: Joi.object().unknown(true).optional(),
 
@@ -15,7 +16,7 @@ const productSchema = Joi.object({
     quantity: Joi.number().integer().min(0).default(0),
     defective: Joi.number().integer().min(0).default(0),
     warehouse: Joi.string().allow('').default('Central Warehouse')
-  }).optional()
+  }).optional(),
 });
 
 const getProducts = async (req, res) => {
@@ -38,8 +39,21 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
+    const nameLower = value.name.trim().toLowerCase();
+
+    const existingProduct = await db.collection('products')
+      .where('nameLower', '==', nameLower)
+      .get();
+
+    if (!existingProduct.empty) {
+      return res.status(409).json({ 
+        error: `Product '${value.name}' already exists. Please update the existing stock.` 
+      });
+    }
+
     const newProduct = {
       ...value,
+      nameLower: nameLower,
       createdBy: req.user.uid,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -59,7 +73,9 @@ const updateProduct = async (req, res) => {
     const { id } = req.params;
     const { error, value } = productSchema.validate(req.body);
     
-    if (error) return res.status(400).json({ error: error.details[0].message });
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
 
     const docRef = db.collection('products').doc(id);
     const doc = await docRef.get();
@@ -68,8 +84,23 @@ const updateProduct = async (req, res) => {
         return res.status(404).json({ error: 'Product not found' });
     }
 
+    const nameLower = value.name.trim().toLowerCase();
+
+    if (doc.data().nameLower !== nameLower) {
+        const duplicateCheck = await db.collection('products')
+            .where('nameLower', '==', nameLower)
+            .get();
+        
+        if (!duplicateCheck.empty) {
+            return res.status(409).json({ 
+                error: `Another product with the name '${value.name}' already exists.` 
+            });
+        }
+    }
+
     const updatedData = {
       ...value,
+      nameLower: nameLower,
       updatedAt: new Date().toISOString()
     };
 
@@ -87,8 +118,9 @@ const deleteProduct = async (req, res) => {
         const docRef = db.collection('products').doc(id);
         const doc = await docRef.get();
     
-        if (!doc.exists) return res.status(404).json({ error: 'Product not found' });
-        if (doc.data().createdBy !== req.user.uid) return res.status(403).json({ error: 'Forbidden' });
+        if (!doc.exists) {
+          return res.status(404).json({ error: 'Product not found' });
+        }
     
         await docRef.delete();
         res.status(200).json({ message: 'Product deleted successfully' });

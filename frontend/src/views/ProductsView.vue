@@ -42,7 +42,6 @@
                 hide-details
               ></v-text-field>
         </v-col>
-
         <v-col cols="12" md="3">
             <v-select
                 v-model="filterCategory"
@@ -54,7 +53,6 @@
                 hide-details
             ></v-select>
         </v-col>
-
         <v-col cols="12" md="3">
             <v-select
                 v-model="sortBy"
@@ -74,41 +72,84 @@
     <v-row>
       <v-col v-for="product in filteredProducts" :key="product.id" cols="12" sm="6" md="4">
         <v-card class="h-100 d-flex flex-column">
-          <v-card-item>
-            <v-card-title class="d-flex justify-space-between">
-              {{ product.name }}
-              <v-chip size="x-small" color="info">{{ product.category?.name }}</v-chip>
-            </v-card-title>
+          <v-card-item class="pb-0">
+            <div class="d-flex justify-space-between align-start">
+              <div class="text-h6 font-weight-bold text-wrap mr-2" style="line-height: 1.2; word-break: break-word;">
+                {{ product.name }}
+              </div>
+              <div class="d-flex flex-column align-end flex-shrink-0">
+                  <v-chip size="x-small" color="primary" variant="flat" class="mb-1">
+                    {{ product.category?.name }}
+                  </v-chip>
+                  <v-chip v-if="product.category?.subcategory" size="x-small" color="secondary" variant="tonal">
+                    {{ product.category?.subcategory }}
+                  </v-chip>
+              </div>
+            </div>
           </v-card-item>
 
-          <v-divider></v-divider>
+          <v-card-text class="pt-2 pb-2">
+             <v-row dense class="mb-2 mt-1 border-b pb-2">
+                <v-col cols="6">
+                    <div class="text-caption text-grey">Unit Price</div>
+                    <div class="text-body-2 font-weight-bold">${{ product.price }}</div>
+                </v-col>
+                <v-col cols="6" class="text-right">
+                    <div class="text-caption text-grey">Total Value</div>
+                    <div class="text-body-2 font-weight-black text-primary">
+                        ${{ (product.price * ((product.inventory?.quantity || 0) + (product.inventory?.defective || 0))).toLocaleString() }}
+                    </div>
+                </v-col>
+             </v-row>
+          </v-card-text>
           
-          <v-card-text class="flex-grow-1">
-             <v-row dense class="mt-1 mb-3">
+          <v-card-text class="flex-grow-1 pt-0">
+             <v-row dense class="mb-3">
                <v-col cols="6">
                  <div class="text-caption text-grey">Operational</div>
-                 <div class="text-h6 text-success">{{ product.inventory?.quantity || 0 }}</div>
+                 <div class="text-h6 text-success font-weight-bold">{{ product.inventory?.quantity || 0 }}</div>
                </v-col>
                <v-col cols="6">
                  <div class="text-caption text-grey">Maintenance</div>
-                 <div class="text-h6 text-warning">{{ product.inventory?.defective || 0 }}</div>
+                 <div class="text-h6 text-warning font-weight-bold">{{ product.inventory?.defective || 0 }}</div>
                </v-col>
              </v-row>
              
-             <div class="text-caption bg-grey-lighten-4 pa-2 rounded">
-               <strong>Specs:</strong>
-               <span v-if="['Laptops', 'Desktops'].includes(product.category?.name)">
-                  {{ product.specifications?.cpu }}, {{ product.specifications?.ram }}
-               </span>
-               <span v-else-if="product.category?.name === 'Monitors'">
-                  {{ product.specifications?.size }}", {{ product.specifications?.resolution }}
-               </span>
-               <span v-else-if="product.category?.name === 'Office Furniture'">
-                  {{ product.specifications?.material }} ({{ product.specifications?.color }})
-               </span>
-               <span v-else>
-                   {{ product.specifications?.description || 'No details' }}
-               </span>
+             <div class="bg-grey-lighten-4 pa-3 rounded border" style="min-height: 100px; font-size: 0.85rem;">
+               
+               <div v-if="product.category?.name === 'IT & Computers'">
+                  <div v-if="product.specifications?.cpu"><strong>Processor:</strong> {{ product.specifications.cpu }}</div>
+                  <div v-if="product.specifications?.ram"><strong>RAM:</strong> {{ product.specifications.ram }}</div>
+                  <div v-if="product.specifications?.storage"><strong>Storage:</strong> {{ product.specifications.storage }}</div>
+                  <div v-if="product.specifications?.os"><strong>OS:</strong> {{ product.specifications.os }}</div>
+               </div>
+               
+               <div v-else-if="product.category?.name === 'Mobile & Phones'">
+                  <div v-if="product.specifications?.screen"><strong>Screen Size:</strong> {{ product.specifications.screen }}</div>
+                  <div v-if="product.specifications?.storage"><strong>Storage:</strong> {{ product.specifications.storage }}</div>
+                  <div v-if="product.specifications?.battery"><strong>Battery:</strong> {{ product.specifications.battery }} mAh</div>
+                  <div v-if="product.specifications?.camera"><strong>Camera:</strong> {{ product.specifications.camera }}</div>
+               </div>
+               
+               <div v-else-if="product.category?.name === 'Office Furniture'">
+                  <div v-if="product.specifications?.material"><strong>Material:</strong> {{ product.specifications.material }}</div>
+                  <div v-if="product.specifications?.color"><strong>Color:</strong> {{ product.specifications.color }}</div>
+                  <div v-if="product.specifications?.dimensions"><strong>Dimensions:</strong> {{ product.specifications.dimensions }}</div>
+               </div>
+               
+               <div v-else-if="product.category?.name === 'Peripherals'">
+                  <div v-if="product.specifications?.connectivity"><strong>Connectivity:</strong> {{ product.specifications.connectivity }}</div>
+                  <div v-if="product.specifications?.type"><strong>Type:</strong> {{ product.specifications.type }}</div>
+               </div>
+
+               <div v-else-if="product.category?.name === 'Networking'">
+                  <div v-if="product.specifications?.speed"><strong>Speed:</strong> {{ product.specifications.speed }}</div>
+                  <div v-if="product.specifications?.ports"><strong>Ports:</strong> {{ product.specifications.ports }}</div>
+               </div>
+
+               <div v-else>
+                   {{ product.specifications?.description || 'No detailed specs.' }}
+               </div>
              </div>
 
              <div class="mt-2 text-caption text-grey">
@@ -117,9 +158,28 @@
              </div>
           </v-card-text>
 
+          <v-divider></v-divider>
+
           <v-card-actions>
             <v-btn variant="text" color="blue" size="small" @click="openDialog(product)">Manage</v-btn>
             <v-spacer></v-spacer>
+            <v-tooltip text="Move to Maintenance" location="top">
+                <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" icon="mdi-wrench" size="small" color="orange" variant="text"
+                        :disabled="(product.inventory?.quantity || 0) <= 0"
+                        @click="moveStock(product, 'to_maintenance')">
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <v-tooltip text="Repair Complete" location="top">
+                <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" icon="mdi-check-circle" size="small" color="success" variant="text"
+                        :disabled="(product.inventory?.defective || 0) <= 0"
+                        @click="moveStock(product, 'to_stock')">
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <v-divider vertical class="mx-2"></v-divider>
             <v-btn variant="text" color="red" icon="mdi-delete" size="small" @click="deleteItem(product.id)"></v-btn>
           </v-card-actions>
         </v-card>
@@ -137,6 +197,7 @@
             <v-row>
               <v-col cols="12" md="6">
                 <div class="text-subtitle-2 text-primary mb-2">Basic Info</div>
+                
                 <v-select 
                     v-model="editedItem.categoryName" 
                     :items="categories" 
@@ -144,6 +205,17 @@
                     variant="outlined" 
                     density="compact"
                     :rules="[v => !!v || 'Category is required']"
+                    @update:modelValue="onCategoryChange"
+                ></v-select>
+
+                <v-select
+                    v-if="editedItem.categoryName && subCategoryMapping[editedItem.categoryName]"
+                    v-model="editedItem.subCategoryName"
+                    :items="subCategoryMapping[editedItem.categoryName]"
+                    label="Sub-category"
+                    variant="outlined"
+                    density="compact"
+                    placeholder="Select Type"
                 ></v-select>
 
                 <v-text-field 
@@ -167,26 +239,48 @@
                 <v-card variant="tonal" color="primary" class="mt-2">
                     <v-card-title class="text-subtitle-2">Specifications</v-card-title>
                     <v-card-text>
-                        <div v-if="['Laptops', 'Desktops'].includes(editedItem.categoryName)">
-                            <v-text-field v-model="editedItem.specs.cpu" label="Processor (CPU)" density="compact" bg-color="white"></v-text-field>
+                        <div v-if="editedItem.categoryName === 'IT & Computers'">
                             <v-row dense>
-                                <v-col><v-text-field v-model="editedItem.specs.ram" label="RAM" density="compact" bg-color="white"></v-text-field></v-col>
-                                <v-col><v-text-field v-model="editedItem.specs.storage" label="Storage" density="compact" bg-color="white"></v-text-field></v-col>
+                                <v-col cols="6"><v-text-field v-model="editedItem.specs.cpu" label="Processor (CPU)" density="compact" bg-color="white"></v-text-field></v-col>
+                                <v-col cols="6"><v-text-field v-model="editedItem.specs.os" label="OS" density="compact" bg-color="white"></v-text-field></v-col>
+                            </v-row>
+                            <v-row dense>
+                                <v-col cols="6"><v-text-field v-model="editedItem.specs.ram" label="RAM" density="compact" bg-color="white"></v-text-field></v-col>
+                                <v-col cols="6"><v-text-field v-model="editedItem.specs.storage" label="Storage" density="compact" bg-color="white"></v-text-field></v-col>
                             </v-row>
                         </div>
-                        <div v-else-if="editedItem.categoryName === 'Monitors'">
-                            <v-text-field v-model="editedItem.specs.size" label="Size (inch)" type="number" density="compact" bg-color="white"></v-text-field>
-                            <v-text-field v-model="editedItem.specs.resolution" label="Resolution" density="compact" bg-color="white"></v-text-field>
+
+                        <div v-else-if="editedItem.categoryName === 'Mobile & Phones'">
+                            <v-row dense>
+                                <v-col cols="6"><v-text-field v-model="editedItem.specs.screen" label="Screen Size" density="compact" bg-color="white"></v-text-field></v-col>
+                                <v-col cols="6"><v-text-field v-model="editedItem.specs.battery" label="Battery (mAh)" density="compact" bg-color="white"></v-text-field></v-col>
+                            </v-row>
+                            <v-row dense>
+                                <v-col cols="12"><v-text-field v-model="editedItem.specs.camera" label="Camera Details" density="compact" bg-color="white"></v-text-field></v-col>
+                                <v-col cols="12"><v-text-field v-model="editedItem.specs.storage" label="Storage" density="compact" bg-color="white"></v-text-field></v-col>
+                            </v-row>
                         </div>
-                        <div v-else-if="editedItem.categoryName === 'Peripherals'">
-                            <v-select v-model="editedItem.specs.connectivity" :items="['Wired', 'Wireless', 'Bluetooth']" label="Connectivity" density="compact" bg-color="white"></v-select>
-                        </div>
+
                         <div v-else-if="editedItem.categoryName === 'Office Furniture'">
-                            <v-text-field v-model="editedItem.specs.material" label="Material" density="compact" bg-color="white"></v-text-field>
-                            <v-text-field v-model="editedItem.specs.color" label="Color" density="compact" bg-color="white"></v-text-field>
+                            <v-row dense>
+                                <v-col cols="6"><v-text-field v-model="editedItem.specs.material" label="Material" density="compact" bg-color="white"></v-text-field></v-col>
+                                <v-col cols="6"><v-text-field v-model="editedItem.specs.color" label="Color" density="compact" bg-color="white"></v-text-field></v-col>
+                            </v-row>
+                            <v-text-field v-model="editedItem.specs.dimensions" label="Dimensions (HxWxD)" density="compact" bg-color="white"></v-text-field>
                         </div>
+
+                        <div v-else-if="editedItem.categoryName === 'Peripherals'">
+                             <v-select v-model="editedItem.specs.connectivity" :items="['Wired', 'Wireless', 'Bluetooth']" label="Connectivity" density="compact" bg-color="white"></v-select>
+                             <v-text-field v-model="editedItem.specs.type" label="Type (e.g. Mechanical, Laser)" density="compact" bg-color="white"></v-text-field>
+                        </div>
+
+                        <div v-else-if="editedItem.categoryName === 'Networking'">
+                             <v-text-field v-model="editedItem.specs.speed" label="Speed (Mbps)" density="compact" bg-color="white"></v-text-field>
+                             <v-text-field v-model="editedItem.specs.ports" label="Number of Ports" type="number" density="compact" bg-color="white"></v-text-field>
+                        </div>
+
                         <div v-else>
-                            <v-textarea v-model="editedItem.specs.description" label="Description" rows="2" density="compact" bg-color="white"></v-textarea>
+                            <v-textarea v-model="editedItem.specs.description" label="General Description" rows="2" density="compact" bg-color="white"></v-textarea>
                         </div>
                     </v-card-text>
                 </v-card>
@@ -228,7 +322,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue'; 
 import { useProductStore } from '../stores/productStore';
 
 const productStore = useProductStore();
@@ -241,7 +335,16 @@ const searchQuery = ref('');
 const filterCategory = ref('All');
 const sortBy = ref('category_asc');
 
-const categories = ['Laptops', 'Desktops', 'Monitors', 'Peripherals', 'Office Furniture', 'Others'];
+const categories = ['IT & Computers', 'Mobile & Phones', 'Office Furniture', 'Peripherals', 'Networking'];
+
+const subCategoryMapping = {
+    'IT & Computers': ['Laptop', 'Desktop', 'Server', 'Workstation'],
+    'Mobile & Phones': ['Smartphone', 'Tablet'],
+    'Office Furniture': ['Desk', 'Chair', 'Cabinet', 'Lamp', 'Whiteboard'],
+    'Peripherals': ['Mouse', 'Keyboard', 'Headset', 'Monitor', 'Docking Station'],
+    'Networking': ['Router', 'Switch', 'Modem', 'Access Point']
+};
+
 const warehouses = ['Central Warehouse', 'IT Dept', 'Reception', 'Remote'];
 
 const sortOptions = [
@@ -254,9 +357,21 @@ const sortOptions = [
 ];
 
 const editedItem = reactive({
-  name: '', price: 0, categoryName: '', warehouse: 'Central Warehouse',
-  quantity: 1, defective: 0,
-  specs: { cpu: '', ram: '', storage: '', size: '', resolution: '', connectivity: '', material: '', color: '', description: '' }
+  name: '', 
+  price: 0, 
+  categoryName: '', 
+  subCategoryName: '',
+  warehouse: 'Central Warehouse',
+  quantity: 1, 
+  defective: 0,
+  specs: { 
+      cpu: '', ram: '', storage: '', os: '',            
+      screen: '', battery: '', camera: '',              
+      material: '', dimensions: '', color: '',          
+      connectivity: '', type: '',                       
+      speed: '', ports: '',                             
+      description: ''                                   
+  }
 });
 
 onMounted(() => productStore.fetchProducts());
@@ -289,14 +404,10 @@ const filteredProducts = computed(() => {
     switch (sortBy.value) {
       case 'category_asc': return catA.localeCompare(catB) || nameA.localeCompare(nameB);
       case 'category_desc': return catB.localeCompare(catA) || nameA.localeCompare(nameB);
-      
       case 'name_asc': return nameA.localeCompare(nameB);
-      
       case 'price_asc': return a.price - b.price;
       case 'price_desc': return b.price - a.price;
-      
       case 'stock_asc': return (a.inventory?.quantity || 0) - (b.inventory?.quantity || 0);
-      
       default: return 0;
     }
   });
@@ -304,21 +415,29 @@ const filteredProducts = computed(() => {
   return items;
 });
 
+const onCategoryChange = () => {
+    Object.keys(editedItem.specs).forEach(key => editedItem.specs[key] = '');
+    editedItem.subCategoryName = '';
+};
+
 const openDialog = (product = null) => {
   if (product) {
     isEditMode.value = true;
     editingId.value = product.id;
     editedItem.name = product.name;
     editedItem.price = product.price;
-
+    
     editedItem.categoryName = (typeof product.category === 'string') ? product.category : (product.category?.name || '');
+    editedItem.subCategoryName = product.category?.subcategory || ''; 
     
     editedItem.warehouse = product.inventory?.warehouse;
     editedItem.quantity = product.inventory?.quantity;
     editedItem.defective = product.inventory?.defective || 0;
     
     Object.keys(editedItem.specs).forEach(key => editedItem.specs[key] = '');
-    Object.assign(editedItem.specs, product.specifications || {});
+    if (product.specifications) {
+        Object.assign(editedItem.specs, product.specifications);
+    }
   } else {
     isEditMode.value = false;
     resetForm();
@@ -329,8 +448,13 @@ const openDialog = (product = null) => {
 const closeDialog = () => { dialog.value = false; resetForm(); };
 
 const resetForm = () => {
-  editedItem.name = ''; editedItem.price = 0; editedItem.categoryName = ''; 
-  editedItem.warehouse = 'Central Warehouse'; editedItem.quantity = 1; editedItem.defective = 0;
+  editedItem.name = ''; 
+  editedItem.price = 0; 
+  editedItem.categoryName = ''; 
+  editedItem.subCategoryName = '';
+  editedItem.warehouse = 'Central Warehouse'; 
+  editedItem.quantity = 1; 
+  editedItem.defective = 0;
   Object.keys(editedItem.specs).forEach(key => editedItem.specs[key] = '');
 };
 
@@ -338,7 +462,11 @@ const save = async () => {
   const payload = {
     name: editedItem.name,
     price: Number(editedItem.price),
-    category: { name: editedItem.categoryName, id: 'cat_' + editedItem.categoryName.toLowerCase() },
+    category: { 
+        name: editedItem.categoryName, 
+        subcategory: editedItem.subCategoryName,
+        id: 'cat_' + editedItem.categoryName.toLowerCase().replace(/\s+/g, '_') 
+    },
     specifications: { ...editedItem.specs },
     inventory: { quantity: Number(editedItem.quantity), defective: Number(editedItem.defective), warehouse: editedItem.warehouse }
   };
@@ -347,6 +475,38 @@ const save = async () => {
     else await productStore.addProduct(payload);
     closeDialog();
   } catch (e) { alert(e.message); }
+};
+
+const moveStock = async (product, direction) => {
+    const currentQty = product.inventory?.quantity || 0;
+    const currentDefective = product.inventory?.defective || 0;
+    let newQty = currentQty;
+    let newDefective = currentDefective;
+
+    if (direction === 'to_maintenance') {
+        if (currentQty > 0) { newQty--; newDefective++; }
+    } else if (direction === 'to_stock') {
+        if (currentDefective > 0) { newDefective--; newQty++; }
+    }
+
+    const payload = {
+        name: product.name,
+        price: product.price,
+        category: product.category,
+        specifications: product.specifications,
+        inventory: {
+            ...product.inventory,
+            quantity: newQty,
+            defective: newDefective,
+            warehouse: product.inventory?.warehouse || 'Central Warehouse'
+        }
+    };
+
+    try {
+        await productStore.updateProduct(product.id, payload);
+    } catch (e) {
+        alert("Error moving stock: " + e.message);
+    }
 };
 
 const deleteItem = async (id) => {
